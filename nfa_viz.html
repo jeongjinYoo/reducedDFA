@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NFA Visualizer</title>
+  <style>
+    body{font-family: Arial, Helvetica, sans-serif; margin:0; padding:0}
+    header{padding:10px;background:#222;color:#fff}
+    main{padding:10px}
+    #controls{display:flex;gap:8px;align-items:center}
+    #viz{width:100%;height:80vh;overflow:auto;border:1px solid #ddd;background:#fff}
+    select,button{padding:6px 10px;font-size:14px}
+    .note{font-size:13px;color:#666;margin-top:8px}
+  </style>
+</head>
+<body>
+  <header>
+    <strong>NFA Visualizer</strong>
+  </header>
+  <main>
+    <div id="controls">
+      <label for="dotFile">DOT 파일:</label>
+      <select id="dotFile">
+        <option value="generated/nfa2.dot">generated/nfa2.dot</option>
+        <option value="generated/nfa3.dot">generated/nfa3.dot</option>
+      </select>
+      <button id="loadBtn">Load</button>
+      <button id="downloadSvg">Download SVG</button>
+    </div>
+    <div class="note">서버에서 이 파일과 `generated/nfa2.dot`/`generated/nfa3.dot`이 같은 폴더에 있어야 합니다. (예: <code>python3 -m http.server 8000</code>)</div>
+    <div id="viz"></div>
+  </main>
+
+  <script src="viz.js"></script>
+  <script src="full.render.js"></script>
+
+  <script>
+    const vizContainer = document.getElementById('viz');
+    const loadBtn = document.getElementById('loadBtn');
+    const select = document.getElementById('dotFile');
+    const downloadBtn = document.getElementById('downloadSvg');
+
+    // Viz and its render function are attached to the global when the two scripts above run.
+    if (typeof Viz === 'undefined') {
+      vizContainer.innerHTML = '<pre style="color:red">Error: Viz is not defined. Check that https://unpkg.com/viz.js@2.1.2/viz.js loaded.</pre>';
+      console.error('Viz is not defined (window.Viz missing)');
+    }
+    else if (typeof Viz.render === 'undefined' || typeof Viz.Module === 'undefined') {
+      vizContainer.innerHTML = '<pre style="color:red">Error: Viz.render or Viz.Module not present. full.render.js may not have initialized properly.</pre>';
+      console.error('Viz.render or Viz.Module missing', { render: Viz.render, Module: !!Viz.Module });
+    }
+    const viz = new Viz();
+
+    async function renderDot(path) {
+      vizContainer.innerHTML = 'Loading ' + path + '...';
+      try {
+        const res = await fetch(path);
+        if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+        const dot = await res.text();
+        const svgEl = await viz.renderSVGElement(dot);
+        vizContainer.innerHTML = '';
+        vizContainer.appendChild(svgEl);
+      } catch (e) {
+        vizContainer.innerHTML = '<pre style="color:red">' + (e.message || e) + '</pre>';
+        console.error(e);
+      }
+    }
+
+    loadBtn.addEventListener('click', () => renderDot(select.value));
+
+    downloadBtn.addEventListener('click', () => {
+      const svg = vizContainer.querySelector('svg');
+      if (!svg) return alert('SVG not rendered yet');
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(svg);
+      const blob = new Blob([svgStr], {type: 'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = select.value.replace('.dot','.svg');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    window.addEventListener('load', () => renderDot(select.value));
+  </script>
+</body>
+</html>

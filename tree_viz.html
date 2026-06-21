@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Regex Tree Visualization</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 10px; }
+        #chart { overflow: auto; border: 1px solid #ddd; }
+        .node circle { fill: #fff; stroke: steelblue; stroke-width: 3px; }
+        .node text { font: 12px sans-serif; }
+        .link { fill: none; stroke: #ccc; stroke-width: 2px; }
+    </style>
+</head>
+<body>
+    <h1>Regex Tree Visualization</h1>
+    <p>Open this file in a browser via a local server and load one of the generated JSON files.</p>
+    <select id="treeSelect">
+        <option value="generated/tree2.json">generated/tree2.json</option>
+        <option value="generated/tree3.json">generated/tree3.json</option>
+    </select>
+    <button id="loadBtn">Load Tree</button>
+    <div id="chart"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        const width = 960;
+        const dx = 20;
+        const dy = width / 6;
+        const treeLayout = d3.tree().nodeSize([dx, dy]);
+
+        const svg = d3.select('#chart').append('svg')
+            .attr('width', width)
+            .attr('height', 600)
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .append('g')
+            .attr('transform', 'translate(40,40)');
+
+        const loadTree = (filename) => {
+            d3.json(filename).then(data => {
+                d3.select('#chart').select('svg').remove();
+
+                const root = d3.hierarchy(data);
+                treeLayout(root);
+
+                const xMin = d3.min(root.descendants(), d => d.x);
+                const xMax = d3.max(root.descendants(), d => d.x);
+                const yMin = d3.min(root.descendants(), d => d.y);
+                const yMax = d3.max(root.descendants(), d => d.y);
+
+                const height = Math.max(600, xMax - xMin + 120);
+                const widthAdjusted = Math.max(width, yMax + 120);
+
+                const treeSvg = d3.select('#chart').append('svg')
+                    .attr('width', widthAdjusted)
+                    .attr('height', height)
+                    .attr('preserveAspectRatio', 'xMinYMin meet')
+                    .attr('viewBox', `0 0 ${widthAdjusted} ${height}`);
+
+                const chartG = treeSvg.append('g')
+                    .attr('transform', `translate(40,${40 - xMin})`);
+
+                chartG.append('g')
+                    .selectAll('path')
+                    .data(root.links())
+                    .join('path')
+                    .attr('class', 'link')
+                    .attr('d', d3.linkHorizontal()
+                        .x(d => d.y)
+                        .y(d => d.x));
+
+                const node = chartG.append('g')
+                    .selectAll('g')
+                    .data(root.descendants())
+                    .join('g')
+                    .attr('class', 'node')
+                    .attr('transform', d => `translate(${d.y},${d.x})`);
+
+                node.append('circle')
+                    .attr('r', 12);
+
+                node.append('text')
+                    .attr('dy', '0.31em')
+                    .attr('x', d => d.children ? -16 : 16)
+                    .attr('text-anchor', d => d.children ? 'end' : 'start')
+                    .text(d => d.data.name);
+            }).catch(error => {
+                console.error(error);
+                alert('Failed to load ' + filename + '. Make sure the JSON file exists and the page is served via HTTP.');
+            });
+        };
+
+        document.getElementById('loadBtn').addEventListener('click', () => {
+            const filename = document.getElementById('treeSelect').value;
+            loadTree(filename);
+        });
+
+        loadTree('generated/tree2.json');
+    </script>
+</body>
+</html>
