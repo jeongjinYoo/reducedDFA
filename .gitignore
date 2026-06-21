@@ -1,17 +1,4 @@
-# Build artifacts
+.vscode
+/generated
 regex_tree
 regex_tree_san
-
-# Generated visualization output
-generated/
-
-# Editor / IDE settings
-.vscode/
-
-# Temporary or backup files
-*~
-*.bak
-
-# OS files
-.DS_Store
-Thumbs.db

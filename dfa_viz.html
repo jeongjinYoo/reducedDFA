@@ -21,10 +21,7 @@
   <main>
     <div id="controls">
       <label for="dotFile">DOT 파일:</label>
-      <select id="dotFile">
-        <option value="generated/dfa2.dot">generated/dfa2.dot</option>
-        <option value="generated/dfa3.dot">generated/dfa3.dot</option>
-      </select>
+      <select id="dotFile"></select>
       <button id="loadBtn">Load</button>
       <button id="downloadSvg">Download SVG</button>
     </div>
@@ -66,7 +63,35 @@
       }
     }
 
+    async function listGeneratedDotFiles(pattern) {
+      try {
+        const res = await fetch('generated/');
+        if (!res.ok) throw new Error('Failed to list generated files: ' + res.status);
+        const text = await res.text();
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        return Array.from(doc.querySelectorAll('a'))
+          .map(a => a.getAttribute('href'))
+          .filter(name => name && pattern.test(name))
+          .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+          .map(name => 'generated/' + name);
+      } catch (e) {
+        console.error(e);
+        return null;
+      }
+    }
+
+    async function populateDotFiles() {
+      const files = await listGeneratedDotFiles(/^dfa_\d+\.dot$/i);
+      if (!files || files.length === 0) {
+        select.innerHTML = '<option value="">No generated DFA dot files found.</option>';
+        return;
+      }
+      select.innerHTML = files.map(path => `<option value="${path}">${path}</option>`).join('');
+      renderDot(files[0]);
+    }
+
     loadBtn.addEventListener('click', () => renderDot(select.value));
+    populateDotFiles();
 
     downloadBtn.addEventListener('click', () => {
       const svg = vizContainer.querySelector('svg');

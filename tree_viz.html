@@ -14,10 +14,7 @@
 <body>
     <h1>Regex Tree Visualization</h1>
     <p>Open this file in a browser via a local server and load one of the generated JSON files.</p>
-    <select id="treeSelect">
-        <option value="generated/tree2.json">generated/tree2.json</option>
-        <option value="generated/tree3.json">generated/tree3.json</option>
-    </select>
+    <select id="treeSelect"></select>
     <button id="loadBtn">Load Tree</button>
     <div id="chart"></div>
 
@@ -89,12 +86,40 @@
             });
         };
 
+        async function listGeneratedFiles(pattern) {
+            try {
+                const res = await fetch('generated/');
+                if (!res.ok) throw new Error('Failed to list generated files: ' + res.status);
+                const text = await res.text();
+                const doc = new DOMParser().parseFromString(text, 'text/html');
+                return Array.from(doc.querySelectorAll('a'))
+                    .map(a => a.getAttribute('href'))
+                    .filter(name => name && pattern.test(name))
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+                    .map(name => 'generated/' + name);
+            } catch (e) {
+                console.error(e);
+                return null;
+            }
+        }
+
+        async function populateTreeFiles() {
+            const select = document.getElementById('treeSelect');
+            const files = await listGeneratedFiles(/^tree_\d+\.json$/i);
+            if (!files || files.length === 0) {
+                select.innerHTML = '<option value="">No generated tree JSON files found.</option>';
+                return;
+            }
+            select.innerHTML = files.map(path => `<option value="${path}">${path}</option>`).join('');
+            loadTree(files[0]);
+        }
+
         document.getElementById('loadBtn').addEventListener('click', () => {
             const filename = document.getElementById('treeSelect').value;
-            loadTree(filename);
+            if (filename) loadTree(filename);
         });
 
-        loadTree('generated/tree2.json');
+        populateTreeFiles();
     </script>
 </body>
 </html>

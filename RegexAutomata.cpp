@@ -20,9 +20,6 @@
   - '+': 합집합(union) 연산자, 가장 낮은 우선순위
   - '.': 연결(concatenation) 연산자, 중간 우선순위
   - '*': 클린 스타(Kleene star), 가장 높은 우선순위
-
-  이 함수는 Shunting Yard 알고리즘에서 연산자 스택을
-  관리할 때 사용됩니다.
 */
 int op_precedence(char op){
     switch(op){
@@ -41,7 +38,6 @@ int op_precedence(char op){
   infix_to_postfix(char* expression)
 
   Infix 형식의 정규표현식을 Postfix 형식으로 변환합니다.
-  이 함수는 Shunting Yard 알고리즘을 사용하여 다음 규칙을 따릅니다.
 
   1. 피연산자(문자 또는 숫자)는 즉시 출력으로 보냅니다.
   2. 연산자는 스택에 저장합니다.
@@ -55,7 +51,7 @@ int op_precedence(char op){
   예: "ab"는 "a.b"로 해석되어야 합니다.
 
   반환값:
-    변환된 postfix 문자열. 호출자는 delete[]로 메모리 해제해야 합니다.
+    변환된 postfix 문자열. 호출자는 delete[]로 메모리 해제합니다.
     변환 중 오류가 나면 NULL을 반환합니다.
 */
 char* infix_to_postfix(char* expression){
